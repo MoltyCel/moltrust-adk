@@ -59,8 +59,16 @@ def test_unregistered_blocks_in_block_mode():
     assert d.block is True and d.reason == "unregistered"
 
 
-def test_transport_error_fails_open():
+def test_transport_error_fails_closed():
+    """0.2.0 (M7): a registry error denies unless the integration opts out."""
     d = evaluate_trust(FakeClient(raises=MolTrustADKError("boom")), DID, action="block")
+    assert d.block is True and d.reason == "lookup_error_failclosed"
+
+
+def test_transport_error_fails_open_when_opted_out():
+    d = evaluate_trust(
+        FakeClient(raises=MolTrustADKError("boom")), DID, action="block", fail_open=True
+    )
     assert d.block is False and d.reason == "lookup_error_failopen"
 
 
