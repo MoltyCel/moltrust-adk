@@ -20,6 +20,7 @@ from google.adk.a2a.agent.config import ParametersConfig, RequestInterceptor
 from google.adk.events import Event
 from google.genai import types as genai_types
 
+from ._trust_cache import TrustScoreCache
 from ._policy import evaluate_trust
 from .client import TrustClient
 
@@ -60,6 +61,9 @@ class MolTrustInterceptor:
         base_url: Optional[str] = None,
         did_key: Optional[str] = None,
         pass_without_did: bool = True,
+        fail_open: bool | None = None,
+        cache_ttl: float = 60.0,
+        cache_stale_grace: float = 300.0,
     ):
         if action not in ("block", "warn", "log"):
             raise ValueError(
@@ -71,6 +75,8 @@ class MolTrustInterceptor:
         self._client = client or TrustClient(api_key=api_key, base_url=base_url)
         self._did_key = did_key
         self._pass_without_did = pass_without_did
+        self._fail_open = fail_open
+        self._cache = TrustScoreCache(ttl=cache_ttl, stale_grace=cache_stale_grace)
 
     def _resolve_did(self, a2a_request: Any) -> Optional[str]:
         if self._did:
@@ -93,6 +99,8 @@ class MolTrustInterceptor:
             min_score=self._min_score,
             action=self._action,
             pass_without_did=self._pass_without_did,
+            fail_open=self._fail_open,
+            cache=self._cache,
         )
 
         if decision.block:
@@ -143,6 +151,7 @@ def create_trust_interceptor(
     base_url: Optional[str] = None,
     did_key: Optional[str] = None,
     pass_without_did: bool = True,
+    fail_open: bool | None = None,
 ) -> RequestInterceptor:
     """Convenience factory: build a ready-to-wire ADK ``RequestInterceptor``.
 
@@ -157,4 +166,5 @@ def create_trust_interceptor(
         base_url=base_url,
         did_key=did_key,
         pass_without_did=pass_without_did,
+        fail_open=fail_open,
     ).as_request_interceptor()
