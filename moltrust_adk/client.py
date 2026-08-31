@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import os
 from typing import Optional
+from urllib.parse import quote
 
 import requests
 
@@ -59,7 +60,7 @@ class TrustClient:
             AgentNotRegistered: the DID is unknown to the registry (HTTP 404).
             MolTrustADKError: on any other HTTP / transport error.
         """
-        url = f"{self._base_url}/skill/trust-score/{did}"
+        url = f"{self._base_url}/skill/trust-score/{quote(did, safe='')}"
         headers = {"User-Agent": f"moltrust-adk/{__version__}"}
         if self._api_key:
             headers["X-API-Key"] = self._api_key
